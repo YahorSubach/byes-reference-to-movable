@@ -1,30 +1,30 @@
 
 #include <cassert>
 #include <iostream>
+#include <vector>
 
-#include "live_ref.h"
+#include "reference_to_movable.h"
 
-struct S : byes::LiveRefTarget<S>
+struct S : byes::RM<S>
 {
 	int s;
 };
 
 int main()
 {
-	S s;
-	s.s = 1;
-	const S cs{};
-	byes::LiveRef<S> ref1 = s;
-	byes::LiveRef<const S> ref2 = s;
-	byes::LiveRef<const S> ref3 = ref2;
+	std::vector<S> v;
+	std::vector<byes::RTM<S>> r;
 
-	s.byes::LiveRefTarget<S>::~LiveRefTarget<S>();
-	int a = 1;
+	for (int i = 0; i < 100; i++)
+	{
+		v.push_back(S());
+		v.back().s = i;
+		r.push_back(byes::RTM<S>(v.back()));
+	}
 
-
-	//byes::LiveRef<S> ref2 = cs;
-	//byes::LiveRef<const S> ref2 = cs;
-
-	//byes::LiveRef<S> ref1_copy = cs;
+	for (int i = 0; i < 100; i++)
+	{
+		assert(r[i]->s == i);
+	}
 
 }
