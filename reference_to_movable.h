@@ -16,7 +16,7 @@ namespace byes {
 	{
 		friend class ReferencedMovable<NoQualifierRawType>;
 
-		void SetNewReferenced(NoQualifierRawType* new_referenced_ptr) noexcept
+		void Reset()
 		{
 			if (prev_)
 			{
@@ -27,7 +27,7 @@ namespace byes {
 			{
 				next_->prev_ = prev_;
 			}
-
+			
 			if (referenced_ptr_ && referenced_ptr_->ref_ == this)
 			{
 				if (prev_)
@@ -40,10 +40,17 @@ namespace byes {
 				}
 			}
 
-			referenced_ptr_ = new_referenced_ptr;
+			referenced_ptr_ = nullptr;
+			prev_ = nullptr;
+			next_ = nullptr;
+		}
 
-			if (referenced_ptr_)
+		void LinkToReferenced(NoQualifierRawType* referenced_ptr)
+		{
+			if (referenced_ptr)
 			{
+				referenced_ptr_ = referenced_ptr;
+
 				if (referenced_ptr_->ref_)
 				{
 					next_ = referenced_ptr_->ref_->next_;
@@ -61,11 +68,6 @@ namespace byes {
 					prev_ = nullptr;
 					referenced_ptr_->ref_ = this;
 				}
-			}
-			else
-			{
-				next_ = nullptr;
-				prev_ = nullptr;
 			}
 		}
 
@@ -114,14 +116,18 @@ namespace byes {
 		}
 
 	public:
-		ReferenceToMovableBase(NoQualifierRawType& ref) noexcept :referenced_ptr_(nullptr), prev_(nullptr), next_(nullptr)
+
+		ReferenceToMovableBase() noexcept :referenced_ptr_(nullptr), prev_(nullptr), next_(nullptr)
+		{}
+
+		ReferenceToMovableBase(const NoQualifierRawType& ref) noexcept :referenced_ptr_(nullptr), prev_(nullptr), next_(nullptr)
 		{
-			SetNewReferenced(&ref);
+			LinkToReferenced(const_cast<NoQualifierRawType*>(&ref));
 		}
 
-		ReferenceToMovableBase(const ReferenceToMovableBase& r) noexcept :referenced_ptr_(nullptr), prev_(nullptr), next_(nullptr)
+		ReferenceToMovableBase(const ReferenceToMovableBase& ref) noexcept :referenced_ptr_(nullptr), prev_(nullptr), next_(nullptr)
 		{
-			SetNewReferenced(r.referenced_ptr_);
+			LinkToReferenced(ref.referenced_ptr_);
 		}
 
 		ReferenceToMovableBase(ReferenceToMovableBase&& r) noexcept :referenced_ptr_(r.referenced_ptr_), prev_(r.prev_), next_(r.next_)
@@ -135,12 +141,45 @@ namespace byes {
 			{
 				referenced_ptr_->ref_ = this;
 				r.referenced_ptr_ = nullptr;
+
+				r.next_ = nullptr;
+				r.prev_ = nullptr;
 			}
+		}
+
+		ReferenceToMovableBase& operator= (const ReferenceToMovableBase& ref)
+		{
+			Reset();
+			LinkToReferenced(ref.referenced_ptr_);
+		}
+
+		ReferenceToMovableBase& operator= (ReferenceToMovableBase&& ref)
+		{
+
+			referenced_ptr_ = ref.referenced_ptr_;
+			prev_ = ref.prev_;
+			next_ = ref.next_;
+
+			if (prev_)
+				prev_->next_ = this;
+			if (next_)
+				next_->prev_ = this;
+
+			if (referenced_ptr_)
+			{
+				referenced_ptr_->ref_ = this;
+				ref.referenced_ptr_ = nullptr;
+
+				ref.next_ = nullptr;
+				ref.prev_ = nullptr;
+			}
+
+			return *this;
 		}
 
 		~ReferenceToMovableBase() noexcept
 		{
-			SetNewReferenced(nullptr);
+			Reset();
 		}
 
 	protected:
@@ -152,18 +191,29 @@ namespace byes {
 	};
 
 	template<typename RawType>
-	class ReferenceToMovable: ReferenceToMovableBase<typename std::remove_cv<RawType>::type>
+	class ReferenceToMovable : ReferenceToMovableBase<typename std::remove_cv<RawType>::type>
 	{
 
 	public:
+
+		ReferenceToMovable() = default;
+
 		ReferenceToMovable(RawType& ref) noexcept : ReferenceToMovableBase<typename std::remove_cv<RawType>::type>(const_cast<std::remove_cv<RawType>::type&>(ref))
 		{}
+
+		ReferenceToMovable(const ReferenceToMovable&) = default;
+		ReferenceToMovable(ReferenceToMovable&&) = default;
+
+		ReferenceToMovable& operator= (const ReferenceToMovable& ref) = default;
+		ReferenceToMovable& operator= (ReferenceToMovable&& ref) = default;
 
 
 		RawType* operator->() const noexcept
 		{
 			return ReferenceToMovableBase<typename std::remove_cv<RawType>::type>::referenced_ptr_;
 		}
+
+		operator RawType& () const { return *ReferenceToMovableBase<typename std::remove_cv<RawType>::type>::referenced_ptr_; }
 
 		friend class ReferencedMovable<typename std::remove_cv<RawType>::type>;
 	};
@@ -187,7 +237,7 @@ namespace byes {
 
 		ReferencedMovable& operator=(const ReferencedMovable&) noexcept { ref_ = nullptr; return this; }
 		ReferencedMovable& operator=(ReferencedMovable&& t) noexcept
-		{ 
+		{
 			ref_ = t.ref_; 
 			t.ref_ = nullptr;
 			if (ref_)
