@@ -208,6 +208,11 @@ namespace byes {
 			return ReferenceToMovableBase<typename std::remove_cv<Referenced>::type>::referenced_ptr_;
 		}
 
+		operator bool() const noexcept
+		{
+			return ReferenceToMovableBase<typename std::remove_cv<Referenced>::type>::referenced_ptr_ != nullptr;
+		}
+
 		operator Referenced& () const { return *ReferenceToMovableBase<typename std::remove_cv<Referenced>::type>::referenced_ptr_; }
 
 		friend class ReferencedMovable<typename std::remove_cv<Referenced>::type>;
