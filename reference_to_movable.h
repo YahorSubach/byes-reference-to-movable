@@ -196,8 +196,8 @@ namespace byes {
 		ReferenceToMovable(Referenced& ref) noexcept : ReferenceToMovableBase<typename std::remove_cv<Referenced>::type>(const_cast<std::remove_cv<Referenced>::type&>(ref))
 		{}
 
-		ReferenceToMovable(const ReferenceToMovable&) = default;
-		ReferenceToMovable(ReferenceToMovable&&) = default;
+		ReferenceToMovable(const ReferenceToMovable&) noexcept = default;
+		ReferenceToMovable(ReferenceToMovable&&) noexcept = default;
 
 		ReferenceToMovable& operator= (const ReferenceToMovable& ref) = default;
 		ReferenceToMovable& operator= (ReferenceToMovable&& ref) = default;
