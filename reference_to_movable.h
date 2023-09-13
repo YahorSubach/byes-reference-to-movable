@@ -238,13 +238,18 @@ namespace byes {
 		ReferencedMovable& operator=(const ReferencedMovable&) noexcept { reference_node_ = nullptr; return this; }
 		ReferencedMovable& operator=(ReferencedMovable&& t) noexcept
 		{
+			if (reference_node_)
+			{
+				reference_node_->OnReferencedMovedOrDeleted(nullptr);
+			}
+
 			reference_node_ = t.reference_node_; 
 			t.reference_node_ = nullptr;
 			if (reference_node_)
 			{
 				reference_node_->OnReferencedMovedOrDeleted(static_cast<Referenced*>(this));
 			}
-			return this; 
+			return *this; 
 		}
 
 		friend class ReferenceToMovableBase<Referenced>;
